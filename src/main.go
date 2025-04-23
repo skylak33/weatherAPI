@@ -27,11 +27,7 @@ type OutputData struct {
 
 func main() {
 	router := gin.Default()
-	router.GET("/weather", getWeather) // привязка запроса к функции
-	// Обслуживание index.html
-	//router.GET("/", func(c *gin.Context) {
-		//c.File("../frontend/public/index.html")
-	//})
+	router.GET("/weather", getWeather)
 	router.Run(":8080")
 }
 
@@ -42,7 +38,7 @@ func getWeather(c *gin.Context) {
 	resp, err := http.Get(WeatherApiUrl(city))
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch weather data"})
-        return
+		return
 	}
 	defer resp.Body.Close()
 
@@ -53,14 +49,11 @@ func getWeather(c *gin.Context) {
 		return
 	}
 
-	//c.Data(resp.StatusCode, "application/json", body)
-
 	var weather WeatherResponse
 	if err := json.Unmarshal(body, &weather); err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON"})
 		return
 	}
-	//c.IndentedJSON(http.StatusOK, weather)
 
 	if len(weather.Days) == 0 {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "No weather data found"})
