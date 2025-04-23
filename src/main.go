@@ -12,6 +12,9 @@ type WeatherDay struct {
 	Datetime      string  `json:"datetime"`
 	DatetimeEpoch int64   `json:"datetimeEpoch"`
 	Temp          float64 `json:"temp"`
+	Feelslike     float64 `json:"feelslike"`
+	Windspeed     float64 `json:"windspeed"`
+	Condition     string  `json:"conditions"`
 }
 
 type WeatherResponse struct {
@@ -20,9 +23,13 @@ type WeatherResponse struct {
 	Days     []WeatherDay `json:"days"`
 }
 type OutputData struct {
-	City     string  `json:"city"`
-	Datetime string  `json:"datetime"`
-	Temp     float64 `json:"temp"`
+	City          string  `json:"city"`
+	Datetime      string  `json:"datetime"`
+	DatetimeEpoch int64   `json:"datetimeEpoch"`
+	Temp          float64 `json:"temp"`
+	Feelslike     float64 `json:"feelslike"`
+	Windspeed     float64 `json:"windspeed"`
+	Condition     string  `json:"conditions"`
 }
 
 func main() {
@@ -61,9 +68,13 @@ func getWeather(c *gin.Context) {
 	}
 
 	answer := OutputData{
-		City:     weather.Address,
-		Datetime: weather.Days[0].Datetime,
-		Temp:     weather.Days[0].Temp,
+		City:          weather.Address,
+		Datetime:      weather.Days[0].Datetime,
+		DatetimeEpoch: weather.Days[0].DatetimeEpoch,
+		Temp:          weather.Days[0].Temp,
+		Feelslike:     weather.Days[0].Feelslike,
+		Windspeed:     weather.Days[0].Windspeed,
+		Condition:     weather.Days[0].Condition,
 	}
 	c.IndentedJSON(http.StatusOK, answer)
 }
