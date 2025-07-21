@@ -41,35 +41,46 @@ func extractField[T any](days []WeatherDay, extractor func(WeatherDay) T) []T {
 }
 
 func getWeather(c *gin.Context) {
+    city := c.Query("city")
+    escapedCity := url.QueryEscape(city)
+    url := WeatherApiUrl(escapedCity)
+    fmt.Println("Request URL:", url)
 
-	city := c.Query("city")
+    resp, err := http.Get(url)
+    if err != nil {
+        fmt.Println("HTTP error:", err)
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch weather data"})
+        return
+    }
+    defer resp.Body.Close()
 
-	resp, err := http.Get(WeatherApiUrl(city))
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch weather data"})
-		return
-	}
-	defer resp.Body.Close()
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        fmt.Println("Read body error:", err)
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response body"})
+        return
+    }
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response body"})
-		return
-	}
+    if resp.StatusCode != http.StatusOK {
+        fmt.Printf("API error (status %d): %s\n", resp.StatusCode, string(body))
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Weather API error"})
+        return
+    }
 
-	var weather WeatherResponse
-	if err := json.Unmarshal(body, &weather); err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON"})
-		return
-	}
-	answer := OutputData{
-		City:          weather.Address,
-		Datetime:      extractField(weather.Days, func(day WeatherDay) string { return day.Datetime }),
-		DatetimeEpoch: extractField(weather.Days, func(day WeatherDay) int64 { return day.DatetimeEpoch }),
-		Temp:          extractField(weather.Days, func(day WeatherDay) float64 { return day.Temp }),
-		Feelslike:     extractField(weather.Days, func(day WeatherDay) float64 { return day.Feelslike }),
-		Windspeed:     extractField(weather.Days, func(day WeatherDay) float64 { return day.Windspeed }),
-		Condition:     extractField(weather.Days, func(day WeatherDay) string { return day.Condition }),
-	}
-	c.IndentedJSON(http.StatusOK, answer)
+    var weather WeatherResponse
+    if err := json.Unmarshal(body, &weather); err != nil {
+        fmt.Println("JSON parse error:", err)
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON"})
+        return
+    }
+    answer := OutputData{
+        City:          weather.Address,
+        Datetime:      extractField(weather.Days, func(day WeatherDay) string { return day.Datetime }),
+        DatetimeEpoch: extractField(weather.Days, func(day WeatherDay) int64 { return day.DatetimeEpoch }),
+        Temp:          extractField(weather.Days, func(day WeatherDay) float64 { return day.Temp }),
+        Feelslike:     extractField(weather.Days, func(day WeatherDay) float64 { return day.Feelslike }),
+        Windspeed:     extractField(weather.Days, func(day WeatherDay) float64 { return day.Windspeed }),
+        Condition:     extractField(weather.Days, func(day WeatherDay) string { return day.Condition }),
+    }
+    c.IndentedJSON(http.StatusOK, answer)
 }
